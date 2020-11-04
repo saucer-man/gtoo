@@ -3,83 +3,109 @@ package port
 // port tcp scan
 
 import (
+	"errors"
 	"fmt"
+	"log"
 	"net"
-	"runtime"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
 
-func loop(inport chan int, startport, endport int) {
-	for i := startport; i < endport; i++ {
-		inport <- i
-	}
-	close(inport)
+type PortScanner struct {
+	host      string
+	timeout   time.Duration
+	threads   int
+	startport int
+	endport   int
 }
 
-type ScanSafeCount struct {
-	// 结构体
-	count int
-	mux   sync.Mutex
-}
-
-var scanCount ScanSafeCount
-
-func scanner(inport int, outport chan int, host *net.IPAddr, endport int) {
-	// 扫描函数
-
-	in := inport // 定义要扫描的端口号
-	// fmt.Printf(" %d ", in) // 输出扫描的端口
-	addr := fmt.Sprintf("%s:%d", host.IP.String(), in)        // 类似（ip,port）  + ""
-	conn, err := net.DialTimeout("tcp", addr, 10*time.Second) //建立tcp连接
+func (p *PortScanner) SetPort(rawport string) (err error) {
+	s := strings.Split(rawport, "-")
+	startport, err := strconv.Atoi(s[0])
 	if err != nil {
-		// tcp连接失败
-		// fmt.Printf("\n *************( %d 不可以 )*****************\n", in)
-		// fmt.Printf("\n%v\n", err)
-		outport <- 0
+		return
+	}
+	var endport int = 0
+	if len(s) == 1 {
+		endport = startport + 1
+	} else if len(s) == 2 {
+		endport, err = strconv.Atoi(s[1])
+		if err != nil {
+			fmt.Printf("cant parse scan port with %v\n", rawport)
+			return
+		}
 	} else {
-		// tcp连接成功
-		outport <- in // 将端口写入outport信号
-		fmt.Printf("\n *************( %d 可以 )*****************\n", in)
-		conn.Close()
+		err = errors.New("cant parse scan port with" + rawport)
+		return
 	}
 
-	// 线程锁
-	scanCount.mux.Lock()
-	scanCount.count = scanCount.count - 1
-	if scanCount.count <= 0 {
-		close(outport)
+	//解析完了之后开看规则
+	if startport <= 0 || startport >= 65535 {
+		err = errors.New("The port to start scanning is out of range")
+		return
 	}
-	scanCount.mux.Unlock()
+	if endport <= 1 || endport >= 65536 {
+		err = errors.New("The port to end scanning is out of range")
+		return
+	}
+	if endport <= startport {
+		err = errors.New("the start port of the scan cannot be larger than the end port")
+		return
+	}
 
+	p.startport = startport
+	p.endport = endport
+	log.Printf("set ports range: %d-%d.\n", p.startport, p.endport)
+	return
 }
 
-func PortScan(host *net.IPAddr, StartPort int, EndPort int) {
-	// 设置最大可使用的cpu核数
-	runtime.GOMAXPROCS(runtime.NumCPU())
-	// 定义变量
-	inport := make(chan int) // 信号变量，类似python中的queue
-	outport := make(chan int)
-	collect := []int{} // 定义一个切片变量，类似python中的list
-	s_time := time.Now().Unix()
-	fmt.Println("扫描开始：") // 获取当前时间
-	// 定义scanCount变量为ScanSafeCount结构体，即计算扫描的端口数量
-	scanCount = ScanSafeCount{count: (EndPort - StartPort)}
-	fmt.Printf("扫描 %v：%d----------%d\n", host, StartPort, EndPort)
-	go loop(inport, StartPort, EndPort) // 执行loop函数将端口写入input信号
-	for v := range inport {
-		// 开始循环input
-		go scanner(v, outport, host, EndPort)
+func (p *PortScanner) SetThreads(threads int) {
+	p.threads = threads
+	log.Printf("set threads %d.\n", p.threads)
+}
+func (p *PortScanner) SetHosts(host string) error {
+	addr, err := net.ResolveIPAddr("ip4", host)
+	if err != nil {
+		return err
 	}
-	// 输出结果
-	for port := range outport {
-		if port != 0 {
-			collect = append(collect, port)
-		}
+	p.host = addr.String()
+	log.Printf("set host %s.\n", p.host)
+	return nil
+}
+func (p *PortScanner) SetTimeout(timeout time.Duration) {
+	p.timeout = timeout
+	log.Printf("set timeout %s.\n", p.timeout)
+}
+func (p PortScanner) IsOpen(port int) bool {
+	conn, err := net.DialTimeout("tcp", fmt.Sprintf("%s:%d", p.host, port), p.timeout)
+	if err != nil {
+		return false
 	}
 
-	fmt.Println("--")
-	fmt.Println(collect)
-	e_time := time.Now().Unix()
-	fmt.Println("扫描时间:", e_time-s_time)
+	defer conn.Close()
+
+	return true
+}
+
+func (p PortScanner) GetOpenedPort() []int {
+	rv := []int{}
+	l := sync.Mutex{}
+	sem := make(chan bool, p.threads) // sem是为了开线程
+	for port := p.startport; port <= p.endport; port++ {
+		sem <- true
+		go func(port int) {
+			if p.IsOpen(port) {
+				l.Lock()
+				rv = append(rv, port)
+				l.Unlock()
+			}
+			<-sem
+		}(port)
+	}
+	for i := 0; i < cap(sem); i++ {
+		sem <- true
+	}
+	return rv
 }
