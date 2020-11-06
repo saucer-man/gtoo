@@ -11,7 +11,7 @@ var versionCmd = &cobra.Command{
 	Short: "version of gtoo",
 	Long:  `version of gtoo`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("gtoo version: v0.0.1")
+		fmt.Println("gtoo version: v0.1")
 	},
 }
 

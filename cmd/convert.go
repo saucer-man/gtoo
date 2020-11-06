@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"gtoo/convert.go"
+	"gtoo/convert"
 
 	"github.com/spf13/cobra"
 )
