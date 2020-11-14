@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"gtoo/convert"
+	"gtoo/utils"
 
 	"github.com/spf13/cobra"
 )
@@ -15,7 +16,7 @@ var convertCmd = &cobra.Command{
 }
 
 var base64encodeCmd = &cobra.Command{
-	Use: "base64encode",
+	Use: "base64 encode",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {
 			return errors.New("requires at least args")
@@ -28,7 +29,7 @@ var base64encodeCmd = &cobra.Command{
 	},
 }
 var base64decodeCmd = &cobra.Command{
-	Use: "base64decode",
+	Use: "base64 decode",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {
 			return errors.New("requires at least args")
@@ -44,8 +45,35 @@ var base64decodeCmd = &cobra.Command{
 	},
 }
 
+var md5Cmd = &cobra.Command{
+	Use: "md5 encode",
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) < 1 {
+			return errors.New("requires at least args")
+		}
+		return nil
+	},
+	Run: func(cmd *cobra.Command, args []string) {
+		if utils.Exists(args[0]) {
+			data, err := convert.Md5encodeFile(args[0])
+			if err != nil {
+				panic(err)
+			}
+			fmt.Printf("file's md5 is %s\n", data)
+		} else {
+			data, err := convert.Md5encodeStr(args[0])
+			if err != nil {
+				panic(err)
+			}
+			fmt.Printf("str's md5 is %s\n", data)
+		}
+
+	},
+}
+
 func init() {
 	rootCmd.AddCommand(convertCmd)
 	convertCmd.AddCommand(base64encodeCmd)
 	convertCmd.AddCommand(base64decodeCmd)
+	convertCmd.AddCommand(md5Cmd)
 }
