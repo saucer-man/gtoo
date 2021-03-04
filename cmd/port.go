@@ -2,8 +2,10 @@ package cmd
 
 import (
 	"errors"
+	"fmt"
 	"gtoo/port"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -28,14 +30,18 @@ var portCmd = &cobra.Command{
 		if err != nil {
 			panic(err)
 		}
+		log.Printf("set host %s.\n", args[0])
 		portScanner.SetThreads(threads)
+		log.Printf("set threads %d.\n", threads)
 		portScanner.SetTimeout(time.Duration(timeout) * time.Second)
+		log.Printf("set timeout %d s.\n", timeout)
 		err = portScanner.SetPort(ports)
 		if err != nil {
 			panic(err)
 		}
+
 		opened := portScanner.GetOpenedPort()
-		log.Printf("result: %v.\n", opened)
+		log.Printf("result: %v.\n", strings.Replace(strings.Trim(fmt.Sprint(opened), "[]"), " ", ",", -1))
 	},
 }
 

@@ -16,10 +16,10 @@ var convertCmd = &cobra.Command{
 }
 
 var base64encodeCmd = &cobra.Command{
-	Use: "base64 encode",
+	Use: "base64encode",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {
-			return errors.New("requires at least args")
+			return errors.New("requires at least args\nExample: gtoo convert base64encode str_to_encode")
 		}
 		return nil
 	},
@@ -29,10 +29,10 @@ var base64encodeCmd = &cobra.Command{
 	},
 }
 var base64decodeCmd = &cobra.Command{
-	Use: "base64 decode",
+	Use: "base64decode",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {
-			return errors.New("requires at least args")
+			return errors.New("requires at least args\nExample: gtoo convert base64encode str_to_decode")
 		}
 		return nil
 	},
@@ -46,10 +46,10 @@ var base64decodeCmd = &cobra.Command{
 }
 
 var md5Cmd = &cobra.Command{
-	Use: "md5 encode",
+	Use: "md5encode",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {
-			return errors.New("requires at least args")
+			return errors.New("requires at least args\nExample: gtoo convert base64encode str_to_encode")
 		}
 		return nil
 	},
@@ -59,15 +59,14 @@ var md5Cmd = &cobra.Command{
 			if err != nil {
 				panic(err)
 			}
-			fmt.Printf("file's md5 is %s\n", data)
+			fmt.Printf("%s file's md5 is %s\n", args[0], data)
 		} else {
 			data, err := convert.Md5encodeStr(args[0])
 			if err != nil {
 				panic(err)
 			}
-			fmt.Printf("str's md5 is %s\n", data)
+			fmt.Printf("%s str's md5 is %s\n", args[0], data)
 		}
-
 	},
 }
 
