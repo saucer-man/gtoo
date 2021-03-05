@@ -3,7 +3,11 @@ package utils
 import (
 	"fmt"
 	"strconv"
+
+	"net/url"
 	"strings"
+
+	"golang.org/x/net/publicsuffix"
 )
 
 //GetPorts 从输入中解析
@@ -49,4 +53,60 @@ func GetPorts(selection string) ([]int, error) {
 		}
 	}
 	return ports, nil
+}
+
+//URL embeds net/url and adds extra fields ontop
+type URL struct {
+	Subdomain, Domain, TLD, Port string
+	ICANN                        bool
+	*url.URL
+}
+
+//ParseURL mirrors net/url.Parse except instead it returns
+//a tld.URL, which contains extra fields.
+func ParseURL(s string) (*URL, error) {
+	url, err := url.Parse(s)
+	if err != nil {
+		return nil, err
+	}
+	if url.Host == "" {
+		return nil, fmt.Errorf("can not find host from %s", s)
+	}
+	dom, port := domainPort(url.Host)
+	//etld+1
+	etld1, err := publicsuffix.EffectiveTLDPlusOne(dom)
+	_, icann := publicsuffix.PublicSuffix(strings.ToLower(dom))
+	if err != nil {
+		return nil, err
+	}
+	//convert to domain name, and tld
+	i := strings.Index(etld1, ".")
+	domName := etld1[0:i]
+	tld := etld1[i+1:]
+	//and subdomain
+	sub := ""
+	if rest := strings.TrimSuffix(dom, "."+etld1); rest != dom {
+		sub = rest
+	}
+	return &URL{
+		Subdomain: sub,
+		Domain:    domName,
+		TLD:       tld,
+		Port:      port,
+		ICANN:     icann,
+		URL:       url,
+	}, nil
+}
+
+func domainPort(host string) (string, string) {
+	for i := len(host) - 1; i >= 0; i-- {
+		if host[i] == ':' {
+			return host[:i], host[i+1:]
+		} else if host[i] < '0' || host[i] > '9' {
+			return host, ""
+		}
+	}
+	//will only land here if the string is all digits,
+	//net/url should prevent that from happening
+	return host, ""
 }
