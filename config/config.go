@@ -9,7 +9,7 @@ import (
 )
 
 type ConfigInFile struct {
-	Zoomeye Zoomeye
+	Zoomeye Zoomeye `toml:"zoomeye"`
 }
 
 type Zoomeye struct {
@@ -24,7 +24,8 @@ const (
 func ReadConfig() (*ConfigInFile, error) {
 	fn, err := getConfigFilename()
 	if err != nil {
-		fmt.Printf("Error when get config file.\n You can define config file with env GTOO_CONFIG or just write to ~/.gtoo_config.toml")
+		log.Println("Error when get config file.")
+		log.Println("You can define config file with env GTOO_CONFIG or just write to ~/.gtoo_config.toml")
 		return nil, err
 	}
 	log.Printf("Use config file: %s", fn)
