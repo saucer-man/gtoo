@@ -11,12 +11,6 @@ import (
 	"strings"
 )
 
-type whoisResult struct {
-	Code    int
-	Message string
-	Data    map[string]interface{}
-}
-
 // Whois 查询whois
 func Whois(domain string) error {
 	if !strings.HasPrefix(domain, "http") {
