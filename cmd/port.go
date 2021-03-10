@@ -3,8 +3,8 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"gtoo/port"
-	"log"
 	"strings"
 	"time"
 

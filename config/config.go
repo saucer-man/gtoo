@@ -2,8 +2,9 @@ package config
 
 import (
 	"fmt"
-	"log"
 	"os"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/BurntSushi/toml"
 )
