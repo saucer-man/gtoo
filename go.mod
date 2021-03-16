@@ -4,7 +4,7 @@ go 1.15
 
 require (
 	github.com/BurntSushi/toml v0.3.1
-	github.com/antonfisher/nested-logrus-formatter v1.3.1 // indirect
+	github.com/antonfisher/nested-logrus-formatter v1.3.1
 	github.com/jpillora/go-tld v1.1.1 // indirect
 	github.com/prometheus/common v0.4.0
 	github.com/sirupsen/logrus v1.2.0
