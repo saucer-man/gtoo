@@ -1,6 +1,7 @@
 package port
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/xml"
 	"errors"
@@ -16,7 +17,6 @@ import (
 type Masscan struct {
 	SystemPath string
 	Args       []string
-	Result     []byte
 }
 
 // SetSystemPath masscan可执行文件路径,默认不需要设置
@@ -58,10 +58,14 @@ func (m *Masscan) SetExclude(exclude string) {
 	m.Args = append(m.Args, exclude)
 }
 
+// SetOutput 设置输出文件的路径
+func (m *Masscan) SetOutput(filepath string) {
+	m.Args = append(m.Args, "-oX")
+	m.Args = append(m.Args, filepath)
+}
+
 // Start scanning
 func (m *Masscan) Run() error {
-	m.Args = append(m.Args, "-oX")
-	m.Args = append(m.Args, "-")
 	cmd := exec.Command(m.SystemPath, m.Args...)
 	log.Info(cmd.Args)
 	var stdoutBuf, stderrBuf bytes.Buffer
@@ -87,14 +91,19 @@ func (m *Masscan) Run() error {
 	if errStdout != nil || errStderr != nil {
 		return errors.New("failed to capture stdout or stderr")
 	}
-	m.Result = stdoutBuf.Bytes()
 	return nil
 }
 
 // Parse scans result.
-func (m *Masscan) Parse() ([]Host, error) {
+func (m *Masscan) Parse(filepath string) ([]Host, error) {
 	var hosts []Host
-	decoder := xml.NewDecoder(bytes.NewReader(m.Result))
+	fi, err := os.Open(filepath)
+	if err != nil {
+		return nil, err
+	}
+	defer fi.Close()
+	r := bufio.NewReader(fi)
+	decoder := xml.NewDecoder(r)
 	for {
 		t, err := decoder.Token()
 		if err == io.EOF {
@@ -124,6 +133,7 @@ func (m *Masscan) Parse() ([]Host, error) {
 	}
 	return hosts, nil
 }
+
 func New() *Masscan {
 	return &Masscan{
 		SystemPath: "masscan",
@@ -146,12 +156,12 @@ type Host struct {
 	Ports   Ports    `xml:"ports>port"`
 }
 type Ports []struct {
-	Protocol string  `xml:"protocol,attr"`
-	Portid   string  `xml:"portid,attr"`
-	State    State   `xml:"state"`
-	Service  Service `xml:"service"`
+	Protocol string   `xml:"protocol,attr"`
+	Portid   string   `xml:"portid,attr"`
+	State    State    `xml:"state"`
+	Service  MService `xml:"service"`
 }
-type Service struct {
+type MService struct {
 	Name   string `xml:"name,attr"`
 	Banner string `xml:"banner,attr"`
 }

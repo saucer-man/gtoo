@@ -1,22 +1,32 @@
 package cmd
 
 import (
+	"bufio"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"gtoo/port"
 	"gtoo/utils"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"strconv"
+	"sync"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
-var host string
 var ports string
-var timeout int
-var threads int
+var masscanRate int
 var masscanPath string
 var includeFile string
+var isProbe bool
+var scanProbeFile string
+var routines int
+var scanRarity int
+var timeout int
 var portCmd = &cobra.Command{
 	Use:   "portscan",
 	Short: "scan open port of host",
@@ -52,9 +62,19 @@ var portCmd = &cobra.Command{
 		}
 		// 设置扫描端口范围
 		m.SetPorts(ports)
-		// 扫描速率
-		m.SetRate(threads)
 
+		// 扫描速率
+		m.SetRate(masscanRate)
+
+		// 设置输出路径
+		rootDir, _ := filepath.Abs(filepath.Dir(os.Args[0]))
+		outputDir := filepath.Join(rootDir, "output")
+		if !utils.IsDir(outputDir) {
+			os.Mkdir(outputDir, os.ModePerm)
+		}
+		masscanOutput := filepath.Join(outputDir, "masscan_result.xml")
+		m.SetOutput(masscanOutput)
+		log.Infof("masscan result save at {%s}", masscanOutput)
 		// 开始扫描
 		err = m.Run()
 		if err != nil {
@@ -63,40 +83,98 @@ var portCmd = &cobra.Command{
 		}
 
 		// 解析扫描结果
-		results, err := m.Parse()
+		results, err := m.Parse(masscanOutput)
 		if err != nil {
 			log.Warnf("Parse result failed: %v", err)
 			os.Exit(-1)
 		}
+		finalRes := filepath.Join(outputDir, "port-result.txt")
+		f, _ := os.Create(finalRes) //创建文件
+		defer f.Close()
+		outFile := bufio.NewWriter(f)
 
-		for _, result := range results {
-			log.Info(result)
+		// 如果不进行探测则将结果保存一下
+		if !isProbe {
+			log.Infof("final result save at %s", finalRes)
+			for _, result := range results {
+				for _, port := range result.Ports {
+					outFile.WriteString(fmt.Sprintf("%s:%s\n", result.Address.Addr, port.Portid))
+				}
+			}
+			outFile.Flush()
+			os.Exit(0)
 		}
-		// var portScanner port.PortScanner
-		// err := portScanner.SetHosts(args[0])
-		// if err != nil {
-		// 	panic(err)
-		// }
-		// log.Printf("set host %s.\n", args[0])
-		// portScanner.SetThreads(threads)
-		// log.Printf("set threads %d.\n", threads)
-		// portScanner.SetTimeout(time.Duration(timeout) * time.Second)
-		// log.Printf("set timeout %d s.\n", timeout)
-		// err = portScanner.SetPort(ports)
-		// if err != nil {
-		// 	panic(err)
-		// }
 
-		// opened := portScanner.GetOpenedPort()
-		// log.Printf("result: %v.\n", strings.Replace(strings.Trim(fmt.Sprint(opened), "[]"), " ", ",", -1))
+		// 进行指纹探测
+		v := port.VScan{}
+		v.Init(scanProbeFile)
+		// 输入输出缓冲为最大协程数量的 5 倍
+		inTargetChan := make(chan port.Target, routines*5)
+		outResultChan := make(chan port.Result, routines*2)
+		// 最大协程并发量为参数 routines
+		wgWorkers := sync.WaitGroup{}
+		wgWorkers.Add(int(routines))
+		// config
+		var config port.Config
+		config.Rarity = scanRarity
+		config.SendTimeout = time.Duration(timeout) * time.Second
+		config.ReadTimeout = time.Duration(timeout) * time.Second
+
+		config.UseAllProbes = false
+		config.NULLProbeOnly = false
+		// 启动协程并开始监听处理输入的 Target
+		for i := 0; i < routines; i++ {
+			worker := port.Worker{inTargetChan, outResultChan, &config}
+			worker.Start(&v, &wgWorkers)
+		}
+		// 实时结果输出协程
+		wgOutput := sync.WaitGroup{}
+		wgOutput.Add(1)
+		go func(wg *sync.WaitGroup) {
+			for {
+				result, ok := <-outResultChan
+				if ok {
+					// 对获取到的 Result 进行判断，如果含有 Error 信息则进行筛选输出
+					encodeJSON, err := json.Marshal(result)
+					if err != nil {
+						continue
+					}
+					outFile.WriteString(string(encodeJSON) + "\n")
+				} else {
+					break
+				}
+			}
+			outFile.Flush()
+			wg.Done()
+		}(&wgOutput)
+		for _, result := range results {
+			for _, p := range result.Ports {
+				intPort, _ := strconv.Atoi(p.Portid)
+				target := port.Target{
+					IP:       result.Address.Addr,
+					Port:     intPort,
+					Protocol: p.Protocol,
+				}
+				inTargetChan <- target
+			}
+		}
+		close(inTargetChan)
+		wgWorkers.Wait()
+		close(outResultChan)
+		wgOutput.Wait()
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(portCmd)
 	portCmd.Flags().StringVarP(&masscanPath, "masscan-path", "m", "masscan", "scan port range")
-	portCmd.Flags().StringVarP(&includeFile, "includefile", "f", "", "scan target filename")
+	portCmd.Flags().StringVarP(&includeFile, "include-file", "f", "", "scan target filename")
 	portCmd.Flags().StringVarP(&ports, "port", "p", "1-65535", "scan port range")
-	portCmd.Flags().IntVarP(&threads, "threads", "t", 1000, "scan threads or rate")
-	portCmd.Flags().IntVarP(&timeout, "timeout", "", 3, "scan timeout")
+	portCmd.Flags().IntVarP(&masscanRate, "masscan-rate", "", 1000, "masscan rate, default 1000")
+	portCmd.Flags().BoolVarP(&isProbe, "is-probe", "", true, "is Probe? default true")
+
+	portCmd.Flags().StringVarP(&scanProbeFile, "scan-probe-file", "", "./source/nmap-service-probes", "scan port range")
+	portCmd.Flags().IntVarP(&routines, "routines", "", 10, "Goroutines numbers using during probe scanning")
+	portCmd.Flags().IntVarP(&scanRarity, "scan-rarity", "", 7, "Sets the intensity level of a version scan to the specified value (default 7)")
+	portCmd.Flags().IntVarP(&timeout, "timeout", "", 5, "connection timeout in seconds (default 5)")
 }
