@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/xml"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -89,7 +88,7 @@ func (m *Masscan) Run() error {
 		return fmt.Errorf("masscan wait failed: %v", err)
 	}
 	if errStdout != nil || errStderr != nil {
-		return errors.New("failed to capture stdout or stderr")
+		log.Errorf("failed to capture stdout or stderr,errStdout: %v. errStderr: %v", errStdout, errStderr)
 	}
 	return nil
 }

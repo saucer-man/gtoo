@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"bufio"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"gtoo/port"
@@ -95,13 +94,13 @@ var portCmd = &cobra.Command{
 
 		// 如果不进行探测则将结果保存一下
 		if !isProbe {
-			log.Infof("final result save at %s", finalRes)
 			for _, result := range results {
 				for _, port := range result.Ports {
 					outFile.WriteString(fmt.Sprintf("%s:%s\n", result.Address.Addr, port.Portid))
 				}
 			}
 			outFile.Flush()
+			log.Infof("final result save at %s", finalRes)
 			os.Exit(0)
 		}
 
@@ -124,7 +123,11 @@ var portCmd = &cobra.Command{
 		config.NULLProbeOnly = false
 		// 启动协程并开始监听处理输入的 Target
 		for i := 0; i < routines; i++ {
-			worker := port.Worker{inTargetChan, outResultChan, &config}
+			worker := port.Worker{
+				In:     inTargetChan,
+				Out:    outResultChan,
+				Config: &config,
+			}
 			worker.Start(&v, &wgWorkers)
 		}
 		// 实时结果输出协程
@@ -134,12 +137,10 @@ var portCmd = &cobra.Command{
 			for {
 				result, ok := <-outResultChan
 				if ok {
-					// 对获取到的 Result 进行判断，如果含有 Error 信息则进行筛选输出
-					encodeJSON, err := json.Marshal(result)
-					if err != nil {
-						continue
-					}
-					outFile.WriteString(string(encodeJSON) + "\n")
+					service := result.Service.Name
+					extras := result.Service.Extras
+					version := fmt.Sprintf("%s%s%s%s%s%s%s", extras.VendorProduct, extras.Version, extras.Info, extras.Hostname, extras.OperatingSystem, extras.DeviceType, extras.CPE)
+					outFile.WriteString(fmt.Sprintf("%s %d %s %s\n", result.IP, result.Port, service, version))
 				} else {
 					break
 				}
@@ -162,6 +163,7 @@ var portCmd = &cobra.Command{
 		wgWorkers.Wait()
 		close(outResultChan)
 		wgOutput.Wait()
+		log.Infof("final result save at %s", finalRes)
 	},
 }
 

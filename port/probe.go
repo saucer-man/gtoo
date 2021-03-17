@@ -2,6 +2,7 @@ package port
 
 import (
 	"errors"
+	"fmt"
 	"net"
 	"regexp"
 	"sort"
@@ -9,8 +10,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-
-	log "github.com/sirupsen/logrus"
 
 	"io/ioutil"
 )
@@ -382,10 +381,10 @@ func (p *Probe) getMatch(data string) (match Match, err error) {
 
 	patternUnescaped, _ := DecodePattern(pattern)
 	patternUnescapedStr := string([]rune(string(patternUnescaped)))
-	patternCompiled, ok := regexp.Compile(patternUnescapedStr)
-	if ok != nil {
-		log.Error("Parse match data failed, data:", data)
-		return match, ok
+	patternCompiled, err := regexp.Compile(patternUnescapedStr)
+	if err != nil {
+		// log.Errorf("Parse match data failed, data:%s", data)
+		return match, err
 	}
 
 	match.Service = directive.DirectiveName
@@ -409,7 +408,7 @@ func (p *Probe) getSoftMatch(data string) (softMatch Match, err error) {
 	patternUnescapedStr := string([]rune(string(patternUnescaped)))
 	patternCompiled, ok := regexp.Compile(patternUnescapedStr)
 	if ok != nil {
-		log.Error("Parse softmatch data failed, data:", data)
+		// log.Error("Parse softmatch data failed, data:", data)
 		return softMatch, ok
 	}
 
@@ -643,7 +642,6 @@ func (v *VScan) parseProbesFromContent(content string) {
 		probe := Probe{}
 		err := probe.fromString(probePart)
 		if err != nil {
-			log.Println(err)
 			continue
 		}
 		probes = append(probes, probe)
@@ -741,12 +739,12 @@ func (v *VScan) scanWithProbes(target Target, probes *[]Probe, config *Config) (
 	for _, probe := range *probes {
 		var response []byte
 
-		log.Debug("Try Probe(" + probe.Name + ")" + ", Data(" + probe.Data + ")")
+		// log.Debug("Try Probe(" + probe.Name + ")" + ", Data(" + probe.Data + ")")
 		response, _ = grabResponse(target, probe.DecodedData, config)
 
 		// 成功获取 Banner 即开始匹配规则，无规则匹配则直接返回
 		if len(response) > 0 {
-			log.Info("Get response " + strconv.Itoa(len(response)) + " bytes from destination with Probe(" + probe.Name + ")")
+			// log.Info("Get response " + strconv.Itoa(len(response)) + " bytes from destination with Probe(" + probe.Name + ")")
 			found := false
 
 			softFound := false
@@ -778,7 +776,7 @@ func (v *VScan) scanWithProbes(target Target, probes *[]Probe, config *Config) (
 				} else
 				// soft 匹配，记录结果
 				if matched && match.IsSoft && !softFound {
-					log.Info("Soft matched:", match.Service, ", pattern:", match.Pattern)
+					// log.Info("Soft matched:", match.Service, ", pattern:", match.Pattern)
 					softFound = true
 					softMatch = match
 				}
@@ -814,7 +812,7 @@ func (v *VScan) scanWithProbes(target Target, probes *[]Probe, config *Config) (
 					} else
 					// soft 匹配，记录结果
 					if matched && match.IsSoft && !softFound {
-						log.Info("Soft fallback matched:", match.Service, ", pattern:", match.Pattern)
+						// log.Info("Soft fallback matched:", match.Service, ", pattern:", match.Pattern)
 						softFound = true
 						softMatch = match
 					}
@@ -870,7 +868,7 @@ func grabResponse(target Target, data []byte, config *Config) ([]byte, error) {
 
 	proto := target.Protocol
 	if !(proto == "tcp" || proto == "udp") {
-		log.Fatal("Failed to send request with unknown protocol", proto)
+		return nil, fmt.Errorf("Failed to send request with unknown protocol: %s", proto)
 	}
 
 	conn, errConn := dialer.Dial(proto, addr)
@@ -927,14 +925,14 @@ func (w *Worker) Start(v *VScan, wg *sync.WaitGroup) {
 			if !ok {
 				break
 			}
-			result, err := v.Explore(target, w.Config)
-			if err != nil {
-				continue
-			}
-			if err == emptyResponse {
-				continue
-			}
+			result, _ := v.Explore(target, w.Config)
 			w.Out <- result
+			// if err != nil {
+			// 	continue
+			// }
+			// if err == emptyResponse {
+			// 	continue
+			// }
 		}
 		wg.Done()
 	}()
