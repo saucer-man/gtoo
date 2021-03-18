@@ -34,6 +34,8 @@ var infoCmd = &cobra.Command{
 		if err != nil {
 			log.Errorf("IPC备案查询出错: %v", err)
 		}
+		// TODO is cdn
+		// TODO 威胁情报
 	},
 }
 
