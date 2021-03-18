@@ -2,9 +2,10 @@ package cmd
 
 import (
 	"errors"
-	"fmt"
 	"gtoo/domain"
+	"strings"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -12,23 +13,31 @@ var domainCmd = &cobra.Command{
 	Use:   "domain",
 	Short: "search some domain info",
 }
-var whoisCmd = &cobra.Command{
-	Use: "whois",
+var infoCmd = &cobra.Command{
+	Use: "info",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {
-			return errors.New("requires at least args\nExample: gtoo domain whois example.com")
+			return errors.New("requires at least args\nExample: gtoo domain info example.com")
 		}
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		err := domain.Whois(args[0])
+		d := args[0]
+		if !strings.HasPrefix(d, "http") {
+			d = "https://" + d
+		}
+		err := domain.Whois(d)
 		if err != nil {
-			fmt.Println(err)
+			log.Errorf("whois查询出错: %v", err)
+		}
+		err = domain.Ipc(d)
+		if err != nil {
+			log.Errorf("IPC备案查询出错: %v", err)
 		}
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(domainCmd)
-	domainCmd.AddCommand(whoisCmd)
+	domainCmd.AddCommand(infoCmd)
 }

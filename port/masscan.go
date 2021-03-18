@@ -66,7 +66,6 @@ func (m *Masscan) SetOutput(filepath string) {
 // Start scanning
 func (m *Masscan) Run() error {
 	cmd := exec.Command(m.SystemPath, m.Args...)
-	log.Info(cmd.Args)
 	var stdoutBuf, stderrBuf bytes.Buffer
 	stdoutIn, _ := cmd.StdoutPipe()
 	stderrIn, _ := cmd.StderrPipe()
