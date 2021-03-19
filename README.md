@@ -21,18 +21,19 @@ todo
 - 内网
     - [ ] 存活探测
     - [ ] MS17010
-
-
-```
-$ gtoo                    
+```                   
+$ gtoo                           
 gtoo id a pentese tool, when you have this, you will got all
 
 Usage:
   gtoo [command]
 
 Available Commands:
+  collect     collect domain and ip
   convert     Common encoding and decoding
+  domain      search some domain info
   help        Help about any command
+  ip          search some domain info
   portscan    scan open port of host
   version     version of gtoo
 
@@ -41,3 +42,5 @@ Flags:
 
 Use "gtoo [command] --help" for more information about a command.
 ```
+
+

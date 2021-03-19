@@ -10,10 +10,14 @@ import (
 )
 
 type ConfigInFile struct {
-	Zoomeye Zoomeye `toml:"zoomeye"`
+	Zoomeye    Zoomeye    `toml:"zoomeye"`
+	ThreadBook ThreadBook `toml:"threatbook"`
 }
 
 type Zoomeye struct {
+	APIKey string `toml:"apikey"`
+}
+type ThreadBook struct {
 	APIKey string `toml:"apikey"`
 }
 

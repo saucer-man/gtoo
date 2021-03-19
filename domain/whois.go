@@ -124,13 +124,14 @@ func Ipc(domain string) error {
 	var ipcres ipcResult
 	err = json.NewDecoder(resp.Body).Decode(&ipcres)
 	if err != nil {
-		return fmt.Errorf("返回结果解析失败：%v", err)
+		return fmt.Errorf("response解析失败：%v", err)
 	}
 	if !ipcres.Success {
 		return errors.New("备案信息查找失败")
 	}
 	if ipcres.Message != "" {
-		return errors.New(ipcres.Message)
+		log.Infof("IPC查询结果:%s", ipcres.Message)
+		return nil
 	}
 	log.Info("IPC查询结果:")
 	fmt.Printf("域名: %s\n", ipcres.Domain)
