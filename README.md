@@ -1,7 +1,7 @@
 # gtoo
 penetration tools based golang
 
-渗透测试中的脚手架工具。不断更新中
+渗透测试中的脚手架工具，基本原则是无任何依赖，开箱即用。
 
 todo
 - 编码部分
