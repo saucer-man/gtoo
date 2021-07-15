@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"gtoo/utils"
 	"net/http"
 	"time"
 
@@ -38,12 +37,7 @@ var myClient = &http.Client{Timeout: 10 * time.Second}
 
 // Whois 查询whois
 func Whois(domain string) error {
-
-	u, err := utils.ParseURL(domain)
-	if err != nil {
-		return err
-	}
-	resp, err := myClient.Get(fmt.Sprintf("https://api.devopsclub.cn/api/whoisquery?domain=%s.%s&type=json", u.Domain, u.TLD))
+	resp, err := myClient.Get(fmt.Sprintf("https://api.devopsclub.cn/api/whoisquery?domain=%s&type=json", domain))
 	if err != nil {
 		return err
 	}
@@ -112,12 +106,8 @@ type ipcInfo struct {
 
 // IPC备案查询
 func Ipc(domain string) error {
-	u, err := utils.ParseURL(domain)
-	if err != nil {
-		return err
-	}
 	// https://api.66mz8.com/api/icp.php?domain=example.com
-	resp, err := myClient.Get(fmt.Sprintf("https://api.vvhan.com/api/icp?url=%s.%s", u.Domain, u.TLD))
+	resp, err := myClient.Get(fmt.Sprintf("https://api.vvhan.com/api/icp?url=%s", domain))
 	if err != nil {
 		return err
 	}

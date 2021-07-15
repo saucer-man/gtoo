@@ -53,12 +53,6 @@ var ipInfoCmd = &cobra.Command{
 	},
 }
 
-func init() {
-	ipInfoCmd.PersistentFlags().StringVarP(&ThreadBookAPIKey, "threadbookapikey", "", "", "微步在线apikey")
-	rootCmd.AddCommand(ipCmd)
-	ipCmd.AddCommand(ipInfoCmd)
-}
-
 var convertCmd = &cobra.Command{
 	Use:   "convert",
 	Short: "常用编码解码",
@@ -134,9 +128,15 @@ var domaininfoCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		d := args[0]
 		if !strings.HasPrefix(d, "http") {
-			d = "https://" + d
+			d = "http://" + d
 		}
-		err := domain.Whois(d)
+		u, err := utils.ParseURL(d)
+		if err != nil {
+			log.Errorf("解析域名出错: %v", err)
+		}
+		d = u.Domain + "." + u.TLD
+		log.Infof("解析出域名:%s\n", d)
+		err = domain.Whois(d)
 		if err != nil {
 			log.Errorf("whois查询出错: %v", err)
 		}
@@ -148,10 +148,42 @@ var domaininfoCmd = &cobra.Command{
 		// TODO 威胁情报
 	},
 }
-
-func init() {
-	rootCmd.AddCommand(domainCmd)
-	domainCmd.AddCommand(domaininfoCmd)
+var subdomainCmd = &cobra.Command{
+	Use: "subdomain",
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) < 1 {
+			return errors.New("requires at least args\nExample: gtoo domain subdomain example.com")
+		}
+		return nil
+	},
+	Run: func(cmd *cobra.Command, args []string) {
+		d := args[0]
+		if !strings.HasPrefix(d, "http") {
+			d = "http://" + d
+		}
+		u, err := utils.ParseURL(d)
+		if err != nil {
+			log.Errorf("解析域名出错: %v", err)
+		}
+		d = u.Domain + "." + u.TLD
+		log.Infof("解析出域名:%s", d)
+		log.Infof("%s 是否泛解析: %t", d, domain.IsWildCard(d))
+		subdomains, err := domain.MatchSubdomains(d, "bbb.aaa.seebug.com www.seebug.com")
+		if err != nil {
+			log.Errorf("解析域名出错: %v", err)
+		}
+		log.Info(subdomains)
+		// err := domain.Whois(d)
+		// if err != nil {
+		// 	log.Errorf("whois查询出错: %v", err)
+		// }
+		// err = domain.Ipc(d)
+		// if err != nil {
+		// 	log.Errorf("IPC备案查询出错: %v", err)
+		// }
+		// TODO is cdn
+		// TODO 威胁情报
+	},
 }
 
 var rootCmd = &cobra.Command{
@@ -165,6 +197,16 @@ func init() {
 	convertCmd.AddCommand(base64encodeCmd)
 	convertCmd.AddCommand(base64decodeCmd)
 	convertCmd.AddCommand(md5Cmd)
+
+	rootCmd.AddCommand(domainCmd)
+	domainCmd.AddCommand(domaininfoCmd)
+	domainCmd.AddCommand(subdomainCmd)
+
+	rootCmd.AddCommand(versionCmd)
+
+	ipInfoCmd.PersistentFlags().StringVarP(&ThreadBookAPIKey, "threadbookapikey", "", "", "微步在线apikey")
+	rootCmd.AddCommand(ipCmd)
+	ipCmd.AddCommand(ipInfoCmd)
 }
 
 var versionCmd = &cobra.Command{
@@ -174,10 +216,6 @@ var versionCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("gtoo version: v0.1")
 	},
-}
-
-func init() {
-	rootCmd.AddCommand(versionCmd)
 }
 
 func Execute() {
