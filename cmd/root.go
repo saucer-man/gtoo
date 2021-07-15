@@ -168,21 +168,19 @@ var subdomainCmd = &cobra.Command{
 		d = u.Domain + "." + u.TLD
 		log.Infof("解析出域名:%s", d)
 		log.Infof("%s 是否泛解析: %t", d, domain.IsWildCard(d))
-		subdomains, err := domain.MatchSubdomains(d, "bbb.aaa.seebug.com www.seebug.com")
-		if err != nil {
-			log.Errorf("解析域名出错: %v", err)
-		}
-		log.Info(subdomains)
-		// err := domain.Whois(d)
+		// err = domain.Bufferover(d)
 		// if err != nil {
-		// 	log.Errorf("whois查询出错: %v", err)
+		// 	log.Errorf("Bufferover子域名api出错: %v", err)
 		// }
-		// err = domain.Ipc(d)
-		// if err != nil {
-		// 	log.Errorf("IPC备案查询出错: %v", err)
-		// }
-		// TODO is cdn
-		// TODO 威胁情报
+		domain.Cersh(d)
+		domain.Sublist3r(d)
+		domain.Chaziyu(d)
+		domain.Chinaz(d)
+		domain.Rapiddns(d)
+		domain.Riddler(d)
+		domain.Sitedossier(d)
+		domain.Threatminer(d)
+
 	},
 }
 

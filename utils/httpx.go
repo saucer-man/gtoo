@@ -18,5 +18,5 @@ var tr = &http.Transport{
 
 var Client = &http.Client{
 	Transport: tr,
-	Timeout:   time.Second * 5, //超时时间
+	Timeout:   time.Second * 15, //超时时间
 }
