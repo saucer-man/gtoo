@@ -1,14 +1,17 @@
 package cmd
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"gtoo/convert"
 	"gtoo/domain"
 	"gtoo/ip"
 	"gtoo/utils"
+	"io"
 	"net"
 	"os"
+	"path"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -148,39 +151,69 @@ var domaininfoCmd = &cobra.Command{
 		// TODO 威胁情报
 	},
 }
+var output string
+var d string //domain
+var domainFile string
 var subdomainCmd = &cobra.Command{
 	Use: "subdomain",
-	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) < 1 {
-			return errors.New("requires at least args\nExample: gtoo domain subdomain example.com")
-		}
-		return nil
-	},
+	// Args: func(cmd *cobra.Command, args []string) error {
+	// 	// if len(args) < 1 {
+	// 	// 	return errors.New("requires at least args\nExample: gtoo domain subdomain example.com")
+	// 	// }
+	// 	return nil
+	// },
 	Run: func(cmd *cobra.Command, args []string) {
-		d := args[0]
-		if !strings.HasPrefix(d, "http") {
-			d = "http://" + d
-		}
-		u, err := utils.ParseURL(d)
-		if err != nil {
-			log.Errorf("解析域名出错: %v", err)
-		}
-		d = u.Domain + "." + u.TLD
-		log.Infof("解析出域名:%s", d)
-		log.Infof("%s 是否泛解析: %t", d, domain.IsWildCard(d))
-		// err = domain.Bufferover(d)
-		// if err != nil {
-		// 	log.Errorf("Bufferover子域名api出错: %v", err)
-		// }
-		domain.Cersh(d)
-		domain.Sublist3r(d)
-		domain.Chaziyu(d)
-		domain.Chinaz(d)
-		domain.Rapiddns(d)
-		domain.Riddler(d)
-		domain.Sitedossier(d)
-		domain.Threatminer(d)
+		var domains []string
+		fmt.Println(d)
+		fmt.Println(domainFile)
+		if d != "" {
+			d = utils.GetDomain(d)
+			if d != "" {
+				domains = append(domains, d)
+			}
 
+		}
+		if domainFile != "" {
+			fi, err := os.Open(domainFile)
+			if err != nil {
+				log.Fatal("读取文件失败：%s", domainFile)
+			}
+			defer fi.Close()
+			br := bufio.NewReader(fi)
+			for {
+				line, _, err := br.ReadLine()
+				if err == io.EOF {
+					break
+				}
+				l := utils.GetDomain(string(line))
+				if l != "" {
+					domains = append(domains, l)
+				}
+			}
+		}
+
+		// 设置一下输出文件
+		dir, _ := os.Getwd()
+		outputPath := path.Join(dir, output)
+		outputDir := path.Dir(outputPath)
+		if !utils.Exists(outputDir) {
+			err := os.MkdirAll(outputDir, os.ModePerm)
+			if err != nil {
+				log.Fatalf("设置输出路径失败: %v", err)
+			}
+		}
+		log.Infof("设置输出文件: %s", outputPath)
+
+		// 设置一下加载的api
+		apistr := ""
+		for k := range domain.SubdomainApi {
+			apistr = fmt.Sprintf("%s [%s]", apistr, k)
+		}
+
+		// 开始扫描
+		log.Infof("下面开始api扫描:%s", apistr)
+		domain.ApiScan(domains, output)
+		log.Infof("api扫描结束!")
 	},
 }
 
@@ -188,21 +221,30 @@ var rootCmd = &cobra.Command{
 	Use:   "gtoo",
 	Short: "gtoo id a pentese tool",
 	Long:  `gtoo id a pentese tool, when you have this, you will got all`,
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		if Verbose {
+			log.SetLevel(log.DebugLevel)
+		}
+	},
 }
+var Verbose bool
 
 func init() {
+	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "verbose output")
 	rootCmd.AddCommand(convertCmd)
 	convertCmd.AddCommand(base64encodeCmd)
 	convertCmd.AddCommand(base64decodeCmd)
 	convertCmd.AddCommand(md5Cmd)
-
 	rootCmd.AddCommand(domainCmd)
 	domainCmd.AddCommand(domaininfoCmd)
 	domainCmd.AddCommand(subdomainCmd)
+	subdomainCmd.Flags().StringVarP(&output, "output", "", "result.txt", "output file")
+	subdomainCmd.Flags().StringVarP(&d, "domain", "d", "", "domain to scan")
+	subdomainCmd.Flags().StringVarP(&domainFile, "domain-file", "", "", "domain file to scan")
 
 	rootCmd.AddCommand(versionCmd)
 
-	ipInfoCmd.PersistentFlags().StringVarP(&ThreadBookAPIKey, "threadbookapikey", "", "", "微步在线apikey")
+	ipInfoCmd.Flags().StringVarP(&ThreadBookAPIKey, "threadbookapikey", "", "", "微步在线apikey")
 	rootCmd.AddCommand(ipCmd)
 	ipCmd.AddCommand(ipInfoCmd)
 }

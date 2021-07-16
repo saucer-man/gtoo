@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"strings"
 
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/publicsuffix"
 )
 
@@ -109,4 +110,16 @@ func domainPort(host string) (string, string) {
 	//will only land here if the string is all digits,
 	//net/url should prevent that from happening
 	return host, ""
+}
+
+func GetDomain(s string) string {
+	if !strings.HasPrefix(s, "http") {
+		s = "http://" + s
+	}
+	u, err := ParseURL(s)
+	if err != nil {
+		log.Warningf("%s 解析域名出错: %v", s, err)
+		return ""
+	}
+	return u.Domain + "." + u.TLD
 }
