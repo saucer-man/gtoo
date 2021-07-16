@@ -164,8 +164,6 @@ var subdomainCmd = &cobra.Command{
 	// },
 	Run: func(cmd *cobra.Command, args []string) {
 		var domains []string
-		fmt.Println(d)
-		fmt.Println(domainFile)
 		if d != "" {
 			d = utils.GetDomain(d)
 			if d != "" {
@@ -191,7 +189,9 @@ var subdomainCmd = &cobra.Command{
 				}
 			}
 		}
-
+		if len(domains) == 0 {
+			log.Fatal("请使用--domain或者--domain-file指定扫描目标")
+		}
 		// 设置一下输出文件
 		dir, _ := os.Getwd()
 		outputPath := path.Join(dir, output)

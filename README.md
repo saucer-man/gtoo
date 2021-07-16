@@ -40,9 +40,18 @@ $ gtoo domain info baidu.com
 主办单位性质: 北京百度网讯科技有限公司
 备案许可证号: 京ICP证030173号-1
 最新审核检测: 2021-07-14 18:03:43
-````
+```
 
-### 2. ip信息
+### 2. 子域名扫描
+
+```
+$ gtoo domain subdomain -d baidu.com  
+2021-07-16 20:09:49 [INFO] 设置输出文件: /Users/yanq/Documents/self/gtoo/result.txt
+2021-07-16 20:09:49 [INFO] 下面开始api扫描: [googlecert] [sublist3r] [chaziyu] [rapiddns] [threatminer] [bufferover] [crtsh] [certspotter] [mnemonic] [chinaz] [riddler]
+2021-07-16 20:10:09 [INFO] api扫描结束!
+```
+
+### 3. ip信息
 
 ```bash
 $ gtoo ip info 120.78.49.231 --threadbookapikey xxxxx
