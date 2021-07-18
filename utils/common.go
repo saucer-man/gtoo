@@ -1,8 +1,10 @@
 package utils
 
 import (
+	"fmt"
 	"math/rand"
 	"os"
+	"reflect"
 	"runtime"
 	"time"
 )
@@ -66,4 +68,40 @@ func RemoveRep(slc []string) []string {
 		// 大于的时候，通过map来过滤
 		return removeRepByMap(slc)
 	}
+}
+
+// 按照tag打印结构体
+func PrintUseTag(ptr interface{}) error {
+
+	// 获取入参的类型
+	t := reflect.TypeOf(ptr)
+
+	// 入参类型校验
+	if t.Kind() != reflect.Ptr || t.Elem().Kind() != reflect.Struct {
+		return fmt.Errorf("参数应该为结构体指针")
+	}
+
+	// 取指针指向的结构体变量
+	v := reflect.ValueOf(ptr).Elem()
+
+	// 解析字段
+	for i := 0; i < v.NumField(); i++ {
+
+		// 取tag
+		fieldInfo := v.Type().Field(i)
+		tag := fieldInfo.Tag
+
+		// 解析label tag
+		label := tag.Get("label")
+		if label == "" {
+			label = fieldInfo.Name + ": "
+		}
+
+		// 取出value
+		value := fmt.Sprintf("%v", v.Field(i))
+
+		fmt.Println(label + ": " + value)
+	}
+
+	return nil
 }

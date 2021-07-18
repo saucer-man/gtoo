@@ -143,10 +143,26 @@ var domaininfoCmd = &cobra.Command{
 		if err != nil {
 			log.Errorf("whois查询出错: %v", err)
 		}
-		err = domain.Ipc(d)
+		log.Infof("ICP备案结果:")
+		ipc138, err := domain.Icp138(d)
 		if err != nil {
-			log.Errorf("IPC备案查询出错: %v", err)
+			log.Debugf("Ip138没查到备案信息：%v", err)
+			ipcvvhan, err := domain.IcpVvhan(d)
+			if err != nil {
+				log.Info(err)
+			} else {
+				utils.PrintUseTag(ipcvvhan)
+			}
+
+		} else {
+
+			utils.PrintUseTag(ipc138)
+
 		}
+		// err = domain.Ipc(d)
+		// if err != nil {
+		// 	log.Errorf("IPC备案查询出错: %v", err)
+		// }
 		// TODO is cdn
 		// TODO 威胁情报
 	},
