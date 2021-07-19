@@ -159,12 +159,14 @@ var domaininfoCmd = &cobra.Command{
 			utils.PrintUseTag(ipc138)
 
 		}
-		// err = domain.Ipc(d)
-		// if err != nil {
-		// 	log.Errorf("IPC备案查询出错: %v", err)
-		// }
-		// TODO is cdn
-		// TODO 威胁情报
+		log.Info("企业工商信息：")
+		entinfo, err := domain.EntInfo(d)
+		if err != nil {
+			log.Warnf("企业信息查询出错: %v", err)
+		} else {
+			utils.PrintUseTag(entinfo)
+		}
+
 	},
 }
 var output string

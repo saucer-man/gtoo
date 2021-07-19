@@ -78,6 +78,8 @@ func PrintUseTag(ptr interface{}) error {
 
 	// 入参类型校验
 	if t.Kind() != reflect.Ptr || t.Elem().Kind() != reflect.Struct {
+		fmt.Println("参数应该为结构体指针")
+		fmt.Println(t.Kind())
 		return fmt.Errorf("参数应该为结构体指针")
 	}
 
@@ -86,7 +88,11 @@ func PrintUseTag(ptr interface{}) error {
 
 	// 解析字段
 	for i := 0; i < v.NumField(); i++ {
-
+		// fmt.Println(v.Field(i).Type().Name())
+		if v.Field(i).Type().Kind() == reflect.Struct {
+			PrintUseTag(v.Field(i).Addr().Interface())
+			continue
+		}
 		// 取tag
 		fieldInfo := v.Type().Field(i)
 		tag := fieldInfo.Tag

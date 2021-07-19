@@ -4,8 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
-	"time"
+	"gtoo/utils"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -33,11 +32,9 @@ type Data struct {
 	ExpirationTime             string `json:"rxpirationTime"`
 }
 
-var myClient = &http.Client{Timeout: 10 * time.Second}
-
 // Whois 查询whois
 func Whois(domain string) error {
-	resp, err := myClient.Get(fmt.Sprintf("https://api.devopsclub.cn/api/whoisquery?domain=%s&type=json", domain))
+	resp, err := utils.Client.Get(fmt.Sprintf("https://api.devopsclub.cn/api/whoisquery?domain=%s&type=json", domain))
 	if err != nil {
 		return err
 	}

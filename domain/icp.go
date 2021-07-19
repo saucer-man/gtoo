@@ -29,7 +29,7 @@ type IcpVvhanInfo struct {
 // IPC备案查询 by vvhan
 func IcpVvhan(domain string) (*IcpVvhanInfo, error) {
 	// https://api.66mz8.com/api/icp.php?domain=example.com
-	resp, err := myClient.Get(fmt.Sprintf("https://api.vvhan.com/api/icp?url=%s", domain))
+	resp, err := utils.Client.Get(fmt.Sprintf("https://api.vvhan.com/api/icp?url=%s", domain))
 	if err != nil {
 		return nil, err
 	}
