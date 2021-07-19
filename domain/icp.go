@@ -48,16 +48,16 @@ func IcpVvhan(domain string) (*IcpVvhanInfo, error) {
 	return &ipcres.Info, nil
 }
 
-type Icp138Result struct {
+type IcpChinazResult struct {
 	IcpNumber string `label:"备案许可证号" json:"icp_number"`
 	IcpName   string `label:"网站备案名称" json:"icp_name"`
 	Attr      string `label:"主办单位性质" json:"attr"`
 	Date      string `label:"审核时间" json:"date"`
 }
 
-func Icp138(url string) (*Icp138Result, error) {
+func IcpChinaz(url string) (*IcpChinazResult, error) {
 	url = "https://icp.chinaz.com/" + url
-	icp := new(Icp138Result)
+	icp := new(IcpChinazResult)
 
 	request, err := http.NewRequest("GET", url, nil)
 	if err != nil {

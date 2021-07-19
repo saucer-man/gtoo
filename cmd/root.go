@@ -144,7 +144,7 @@ var domaininfoCmd = &cobra.Command{
 			log.Errorf("whois查询出错: %v", err)
 		}
 		log.Infof("ICP备案结果:")
-		ipc138, err := domain.Icp138(d)
+		ipc138, err := domain.IcpChinaz(d)
 		if err != nil {
 			log.Debugf("Ip138没查到备案信息：%v", err)
 			ipcvvhan, err := domain.IcpVvhan(d)
