@@ -7,7 +7,9 @@ import (
 	"io/ioutil"
 	"net/http"
 	"regexp"
+	"strings"
 
+	"github.com/PuerkitoBio/goquery"
 	"github.com/axgle/mahonia"
 	log "github.com/sirupsen/logrus"
 )
@@ -152,4 +154,42 @@ func Ipinfo(ip string) error {
 	}
 	return nil
 
+}
+
+func IpLookup(ip string) error {
+	req, err := http.NewRequest("GET", fmt.Sprintf("https://www.dnsgrep.cn/ip/%s", ip), nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("authority", "www.dnsgrep.cn")
+	req.Header.Set("cache-control", "max-age=0")
+	req.Header.Set("sec-ch-ua-mobile", "?0")
+	req.Header.Set("upgrade-insecure-requests", "1")
+	req.Header.Set("user-agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.164 Safari/537.36")
+	req.Header.Set("accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9")
+	req.Header.Set("sec-fetch-site", "cross-site")
+	req.Header.Set("sec-fetch-mode", "navigate")
+	req.Header.Set("sec-fetch-user", "?1")
+	req.Header.Set("sec-fetch-dest", "document")
+	req.Header.Set("accept-language", "zh-CN,zh;q=0.9")
+	resp, err := utils.Client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	if err != nil {
+		return err
+	}
+	doc.Find("#table tr").Each(func(i int, s *goquery.Selection) {
+		s.Find("td").Each(func(i1 int, s1 *goquery.Selection) {
+			text := strings.Replace(s1.Text(), "\n", "", -1)
+			text = strings.Replace(text, " ", "", -1)
+			fmt.Printf("%-20s\t", text)
+		})
+		fmt.Printf("\n")
+	})
+
+	return nil
 }

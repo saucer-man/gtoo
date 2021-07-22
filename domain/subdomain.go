@@ -30,6 +30,7 @@ var SubdomainApi = map[string]string{
     // "sitedossier": "http://www.sitedossier.com/parentdomain/%s",
     "bufferover":  "https://dns.bufferover.run/dns?q=%s",
     "threatminer": "https://api.threatminer.org/v2/domain.php?q=%s",
+    "dnsgrep":     "https://www.dnsgrep.cn/subdomain/%s",
 }
 
 // IsWildCard 检测是否是泛解析域名
@@ -86,7 +87,7 @@ func GetSubdomainFromUrl(d, url string) ([]string, error) {
 
 func ApiScan(domains []string, outputPath string) error {
     taskCreater := make(chan int, 1)   //一个任务生产者
-    taskConsumer := make(chan int, 11) // 11个任务消费者
+    taskConsumer := make(chan int, 20) // 20个任务消费者
     resConsumer := make(chan int, 1)   //一个结果消费者，
     // 扫描任务 channel、每个元素是一个map
     task := make(chan map[string]string, 1000)

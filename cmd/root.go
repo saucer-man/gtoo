@@ -59,6 +59,11 @@ var ipInfoCmd = &cobra.Command{
 		if err != nil {
 			log.Warnf("查询发生错误:%v", err)
 		}
+		log.Info("ip反查域名:")
+		err = ip.IpLookup(address.String())
+		if err != nil {
+			log.Warnf("查询发生错误:%v", err)
+		}
 	},
 }
 
