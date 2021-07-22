@@ -3,13 +3,14 @@ package ip
 import (
 	"encoding/json"
 	"fmt"
+	"gtoo/utils"
+	"io/ioutil"
 	"net/http"
-	"time"
+	"regexp"
 
+	"github.com/axgle/mahonia"
 	log "github.com/sirupsen/logrus"
 )
-
-var myClient = &http.Client{Timeout: 10 * time.Second}
 
 type ThreatBook struct {
 	apiKey string
@@ -64,10 +65,10 @@ type ThreatBookIPAsn struct {
 }
 
 // IP信誉查询
-func (t *ThreatBook) IP(ip string) error {
+func (t *ThreatBook) IpReputation(ip string) error {
 	url := fmt.Sprintf("https://api.threatbook.cn/v3/scene/ip_reputation?apikey=%s&resource=%s&lang=zh", t.apiKey, ip)
 
-	resp, err := myClient.Get(url)
+	resp, err := utils.Client.Get(url)
 	if err != nil {
 		return err
 	}
@@ -106,4 +107,49 @@ func (t *ThreatBook) IP(ip string) error {
 		fmt.Printf("情报更新时间: %s\n", v.UpdateTime)
 	}
 	return nil
+}
+
+func Ipinfo(ip string) error {
+	url := fmt.Sprintf("https://www.ip138.com/iplookup.asp?ip=%s&action=2", ip)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Connection", "keep-alive")
+	req.Header.Set("Cache-Control", "max-age=0")
+	req.Header.Set("sec-ch-ua-mobile", "?0")
+	req.Header.Set("Upgrade-Insecure-Requests", "1")
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.164 Safari/537.36")
+	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9")
+	req.Header.Set("Sec-Fetch-Site", "none")
+	req.Header.Set("Sec-Fetch-Mode", "navigate")
+	req.Header.Set("Sec-Fetch-User", "?1")
+	req.Header.Set("Sec-Fetch-Dest", "document")
+	req.Header.Set("Accept-Language", "zh-CN,zh;q=0.9")
+	req.Header.Set("Cookie", "PHPSESSID=50vhfi98p3bm0uorm9b2kh99dk; Hm_lvt_f4f76646cd877e538aa1fbbdf351c548=1624444428,1626868959; ASPSESSIONIDCARCCCBT=BNANEOGCGDELKMMOJJJMPGMN; ASPSESSIONIDQATRTSDA=EJEOPIGCCIALGHNDGLPPKEMA; Hm_lpvt_f4f76646cd877e538aa1fbbdf351c548=1626869400")
+	resp, err := utils.Client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	// 解决gbk编码 中文乱码
+	bodystr := mahonia.NewDecoder("gbk").ConvertString(string(body))
+
+	flysnowRegexp := regexp.MustCompile(`var ip_result = ([\s\S]*?);[\s\S]*?var ip_begin`)
+
+	params := flysnowRegexp.FindStringSubmatch(bodystr)
+
+	m := make(map[string]string)
+	json.Unmarshal([]byte(params[1]), &m)
+	for k, v := range m {
+		if v != "" {
+			fmt.Printf("%v: %+v\n", k, v)
+		}
+	}
+	return nil
+
 }

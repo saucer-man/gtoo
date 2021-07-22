@@ -26,7 +26,7 @@ type BusinessInfoModel struct {
 	Type               string `label:"公司类型"  json:"type"`
 	State              string `label:"公司状态"  json:"state"`
 	RegistrationNumber string `label:"工商注册号"  json:"registrationNumber"`
-	industry           string `label:"所属行业"  json:"industry"`
+	Industry           string `label:"所属行业"  json:"industry"`
 	ApprovalDate       string `label:"核准日期"  json:"approvalDate"`
 	RegisteredAddress  string `label:"注册地址"  json:"registeredAddress"`
 	BusinessScope      string `label:"经营范围"  json:"businessScope"`

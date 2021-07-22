@@ -43,16 +43,22 @@ var ipInfoCmd = &cobra.Command{
 		// 	fmt.Println("正确的ip地址", address.String())
 		// }
 		//下面调用微步在线的api查询ip信誉
-
+		log.Info("微步在线查询IP信息:")
 		if ThreadBookAPIKey != "" {
 			t := ip.NewThreatBook(ThreadBookAPIKey)
-			log.Info("微步在线查询IP信息...")
-			err := t.IP(address.String())
+			err := t.IpReputation(address.String())
 			if err != nil {
 				log.Errorf("微步在线查询IP信息失败: %v", err)
 			}
+		} else {
+			log.Warn("未提供ThreadBookAPIKey")
 		}
 		// TODO is cdn
+		log.Info("ip138查询ip信息:")
+		err := ip.Ipinfo(address.String())
+		if err != nil {
+			log.Warnf("查询发生错误:%v", err)
+		}
 	},
 }
 
