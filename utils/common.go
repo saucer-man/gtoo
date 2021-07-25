@@ -78,8 +78,6 @@ func PrintUseTag(ptr interface{}) error {
 
 	// 入参类型校验
 	if t.Kind() != reflect.Ptr || t.Elem().Kind() != reflect.Struct {
-		fmt.Println("参数应该为结构体指针")
-		fmt.Println(t.Kind())
 		return fmt.Errorf("参数应该为结构体指针")
 	}
 
