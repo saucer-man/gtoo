@@ -183,7 +183,17 @@ var domaininfoCmd = &cobra.Command{
 		} else {
 			utils.PrintUseTag(entinfo)
 		}
+		log.Info("企业域名查询")
+		domains, err := domain.GetCompanyDomain(entinfo.CompanyName)
+		if err != nil {
+			log.Warnf("企业域名查询: %v", err)
+		} else {
+			fmt.Printf("一共%d个域名:\n", len(domains))
+			for _, domain := range domains {
+				fmt.Println(domain.Host)
+			}
 
+		}
 	},
 }
 var output string
