@@ -15,6 +15,7 @@ Available Commands:
   domain      域名相关信息
   help        Help about any command
   ip          ip相关信息
+  url         url相关信息
   version     version of gtoo
 
 Flags:
@@ -22,7 +23,6 @@ Flags:
   -v, --verbose   verbose output
 
 Use "gtoo [command] --help" for more information about a command.
-
 ```
 
 
@@ -95,4 +95,37 @@ lc.59cl.cn
 saucer-man.com
 www.furongdo.com
 xiaogeng.top
+```
+
+# url信息
+```
+$ ./gtoo url info baidu.com
+
+    __    __  __       _  __
+   / /_  / /_/ /_____ | |/ /
+  / __ \/ __/ __/ __ \|   /
+ / / / / /_/ /_/ /_/ /   |
+/_/ /_/\__/\__/ .___/_/|_|
+             /_/              v1.1.1
+
+                projectdiscovery.io
+
+Use with caution. You are responsible for your actions
+Developers assume no liability and are not responsible for any misuse or damage.
+https://baidu.com [302] [GET] [302 Found] [vhost] [220.181.38.148]
+https://baidu.com [302] [GET] [302 Found] [vhost] [220.181.38.148]
+https://ww.baidu.com [302] [GET] [302 Found] [vhost] [110.242.68.66] [ps_other.a.shifen.com]
+https://www.baidu.hk [302] [GET] [302 Found] [vhost] [110.242.68.66] [ps_other.a.shifen.com]
+https://www.baidu.net.ph [302] [GET] [302 Found] [vhost] [110.242.68.66] [other.a.shifen.com]
+https://www.baidu.com.hk [302] [GET] [302 Found] [vhost] [110.242.68.66] [other.a.shifen.com]
+https://w.baidu.com [302] [GET] [302 Found] [vhost] [110.242.68.66] [ps_other.a.shifen.com]
+https://www.baidu.net.au [302] [GET] [302 Found] [vhost] [110.242.68.66] [other.a.shifen.com]
+https://wwww.baidu.com [302] [GET] [302 Found] [vhost] [110.242.68.66] [ps_other.a.shifen.com]
+https://www.baidu.net.tw [302] [GET] [302 Found] [vhost] [110.242.68.66] [other.a.shifen.com]
+https://baidu.cn [302] [GET] [302 Found] [vhost] [220.181.38.251]
+https://www.baidu.cn [200] [GET] [百度一下，你就知道] [vhost] [104.193.88.123] [www.a.shifen.com]
+https://www.baidu.cn [302] [GET] [] [vhost] [112.80.248.75] [www.a.shifen.com]
+http://www.baidu.net.vn [302] [GET] [302 Found] [vhost] [110.242.68.66] [other.a.shifen.com] [Apache]
+https://www.baidu.com.cn [302] [GET] [] [103.235.46.39] [www.a.shifen.com]
+2021-08-13 15:59:30 [INFO] 结果保存在url_result.txt中
 ```
