@@ -14,6 +14,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/projectdiscovery/cdncheck"
 	"github.com/saucer-man/iplookup"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -54,9 +55,27 @@ var ipInfoCmd = &cobra.Command{
 		} else {
 			log.Warn("未提供ThreadBookAPIKey")
 		}
-		// TODO is cdn
+		// cdn查询
+		// uses projectdiscovery endpoint with cached data to avoid ip ban
+		// Use cdncheck.New() if you want to scrape each endpoint (don't do it too often or your ip can be blocked)
+		log.Info("cdn查询(不一定准):")
+		client, err := cdncheck.NewWithCache()
+		if err != nil {
+			log.Warnf("查询发生错误:%v", err)
+		}
+		found, err := client.Check(address)
+		if err != nil {
+			log.Warnf("查询发生错误:%v", err)
+		} else {
+			if found {
+				log.Info("此ip属于cdn网段")
+			} else {
+				log.Info("此ip不属于cdn网段")
+			}
+		}
+
 		log.Info("ip138查询ip信息:")
-		err := ip.Ipinfo(address.String())
+		err = ip.Ipinfo(address.String())
 		if err != nil {
 			log.Warnf("查询发生错误:%v", err)
 		}
