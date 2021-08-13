@@ -9,12 +9,15 @@ import (
 	"gtoo/ip"
 	"gtoo/utils"
 	"io"
+	"io/ioutil"
 	"net"
 	"os"
+	"os/signal"
 	"path"
 	"strings"
 
 	"github.com/projectdiscovery/cdncheck"
+	"github.com/projectdiscovery/httpx/runner"
 	"github.com/saucer-man/iplookup"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -89,6 +92,86 @@ var ipInfoCmd = &cobra.Command{
 		if err != nil {
 			log.Warnf("查询发生错误:%v", err)
 		}
+	},
+}
+var urlCmd = &cobra.Command{
+	Use:   "url",
+	Short: "url相关信息",
+}
+
+var urlInfoCmd = &cobra.Command{
+	Use: "info",
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) < 1 {
+			return errors.New("requires at least args\nExample: gtoo url info example.com/domain.txt")
+		}
+		return nil
+	},
+	FParseErrWhitelist: cobra.FParseErrWhitelist{
+		UnknownFlags: true,
+	},
+	Run: func(cmd *cobra.Command, args []string) {
+		// Parse the command line flags and read config files
+		options := runner.ParseOptions()
+		options.OutputCDN = true    // -cdn
+		options.ExtractTitle = true // -title
+		options.OutputCName = true  // -cname
+		options.StatusCode = true   // -status-code
+		options.OutputMethod = true // -method
+		options.TLSProbe = true     // -tls-probe
+		options.TechDetect = true   // -tech-detect
+		options.HTTP2Probe = true   // -http2
+		options.OutputIP = true     // -ip
+		options.CSPProbe = true     // - csp-probe
+		options.VHost = true        // -vhost
+		options.Output = "url_result.txt"
+		options.NoColor = true
+		// 看输入是否是文件
+		if utils.FileExists(args[0]) {
+			options.InputFile = args[0]
+		} else {
+			// Create our Temp File
+			tmpFile, err := ioutil.TempFile(os.TempDir(), "gtoo-")
+			if err != nil {
+				log.Fatal("Cannot create temporary file", err)
+			}
+
+			log.Debug("Created tmp File: " + tmpFile.Name())
+
+			// Example writing to the file
+			_, err = tmpFile.Write([]byte(args[0]))
+			if err != nil {
+				log.Fatal("Failed to write to temporary file", err)
+			}
+			options.InputFile = tmpFile.Name()
+			// Remember to clean up the file afterwards
+			defer os.Remove(tmpFile.Name())
+		}
+		httpxRunner, err := runner.New(options)
+		if err != nil {
+			log.Fatal("Could not create runner: %s\n", err)
+		}
+		// Setup graceful exits
+		c := make(chan os.Signal, 1)
+		signal.Notify(c, os.Interrupt)
+		go func() {
+			for range c {
+				log.Info("CTRL+C pressed: Exiting\n")
+				httpxRunner.Close()
+				if options.ShouldSaveResume() {
+					log.Info("Creating resume file: %s\n", runner.DefaultResumeFile)
+					err := httpxRunner.SaveResumeConfig()
+					if err != nil {
+						log.Error("Couldn't create resume file: %s\n", err)
+					}
+				}
+				os.Exit(1)
+			}
+		}()
+
+		httpxRunner.RunEnumeration()
+		httpxRunner.Close()
+		log.Info("结果保存在url_result.txt中")
 	},
 }
 
@@ -311,6 +394,9 @@ func init() {
 	ipInfoCmd.Flags().StringVarP(&ThreadBookAPIKey, "threadbookapikey", "", "", "微步在线apikey")
 	rootCmd.AddCommand(ipCmd)
 	ipCmd.AddCommand(ipInfoCmd)
+
+	urlCmd.AddCommand(urlInfoCmd)
+	rootCmd.AddCommand(urlCmd)
 }
 
 var versionCmd = &cobra.Command{
