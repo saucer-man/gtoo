@@ -97,9 +97,11 @@ www.furongdo.com
 xiaogeng.top
 ```
 
-# url信息
+### 4. url信息
+
+from https://github.com/projectdiscovery/httpx
 ```
-$ ./gtoo url info baidu.com
+$ gtoo url info baidu.com
 
     __    __  __       _  __
    / /_  / /_/ /_____ | |/ /

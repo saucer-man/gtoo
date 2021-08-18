@@ -16,6 +16,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/BurntSushi/toml"
 	"github.com/projectdiscovery/cdncheck"
 	"github.com/projectdiscovery/httpx/runner"
 	"github.com/saucer-man/iplookup"
@@ -27,6 +28,16 @@ var ipCmd = &cobra.Command{
 	Use:   "ip",
 	Short: "ip相关信息",
 }
+var output string
+var d string //domain
+var domainFile string
+
+type tomlConfig struct {
+	ThreadBookAPIKey string `toml:"threadbook_apikey"`
+}
+
+var config tomlConfig
+var Verbose bool
 var ThreadBookAPIKey string
 var ipInfoCmd = &cobra.Command{
 	Use: "info",
@@ -50,7 +61,11 @@ var ipInfoCmd = &cobra.Command{
 		//下面调用微步在线的api查询ip信誉
 		log.Info("微步在线查询IP信息:")
 		if ThreadBookAPIKey != "" {
-			t := ip.NewThreatBook(ThreadBookAPIKey)
+			config.ThreadBookAPIKey = ThreadBookAPIKey
+		}
+
+		if config.ThreadBookAPIKey != "" {
+			t := ip.NewThreatBook(config.ThreadBookAPIKey)
 			err := t.IpReputation(address.String())
 			if err != nil {
 				log.Errorf("微步在线查询IP信息失败: %v", err)
@@ -298,9 +313,7 @@ var domaininfoCmd = &cobra.Command{
 		}
 	},
 }
-var output string
-var d string //domain
-var domainFile string
+
 var subdomainCmd = &cobra.Command{
 	Use: "subdomain",
 	// Args: func(cmd *cobra.Command, args []string) error {
@@ -372,9 +385,29 @@ var rootCmd = &cobra.Command{
 		if Verbose {
 			log.SetLevel(log.DebugLevel)
 		}
+		filePath, _ := os.UserHomeDir()
+		filePath = path.Join(filePath, ".gtoo.toml")
+		toml.DecodeFile(filePath, &config)
+	},
+	PersistentPostRun: func(cmd *cobra.Command, args []string) {
+		filePath, _ := os.UserHomeDir()
+		filePath = path.Join(filePath, ".gtoo.toml")
+		f, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
+		if err != nil {
+			fmt.Println("failed to create/open the file")
+			fmt.Println(err)
+			return
+		}
+		if err := toml.NewEncoder(f).Encode(config); err != nil {
+			// failed to encode
+			return
+		}
+		if err := f.Close(); err != nil {
+			// failed to close the file
+			return
+		}
 	},
 }
-var Verbose bool
 
 func init() {
 	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "verbose output")
